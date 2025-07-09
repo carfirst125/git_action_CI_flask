@@ -4,6 +4,15 @@
 # az provider register -n Microsoft.OperationalInsights --wait
 # az containerapp env create --name my-app-env --resource-group study_resource_group --location southeastasia
 
+
+# kiểm tra container có tồn tại không trước khi chạy curl
+
+# az containerapp show --name flask-api-app --resource-group study_resource_group --query properties.configuration.ingress.fqdn --output tsv
+
+
+# cần chạy các command này:
+# az acr update -n acr123456789 --admin-enabled true
+
 name: Deploy Flask API
 
 on:
@@ -96,16 +105,27 @@ jobs:
         fi
 
     - name: Wait for container app to be ready
-      run: sleep 15
+      run: sleep 60
+      
+    - name: Get Container App FQDN (APP_URL)
+      id: get-app-url
+      run: |
+        APP_URL=$(az containerapp show \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query properties.configuration.ingress.fqdn \
+          --output tsv)
+        echo "APP_URL=https://$APP_URL" >> $GITHUB_ENV
 
+    #flask-api-app.gentlewave-c1b4ab11.southeastasia.azurecontainerapps.io
     - name: Test root endpoint
-      run: curl -f https://${{ env.CONTAINER_APP_NAME }}.azurecontainerapps.io/
+      run: curl -f ${{ env.APP_URL }}/
 
     - name: Test about endpoint
-      run: curl -f https://${{ env.CONTAINER_APP_NAME }}.azurecontainerapps.io/about
+      run: curl -f ${{ env.APP_URL }}/about
 
     - name: Test API endpoint
-      run: curl -f https://${{ env.CONTAINER_APP_NAME }}.azurecontainerapps.io/health
+      run: curl -f ${{ env.APP_URL }}/health
 
     - name: Wait for API call to complete
       run: sleep 15
