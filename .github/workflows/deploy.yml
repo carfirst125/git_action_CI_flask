@@ -1,3 +1,9 @@
+
+# Check containerapp_env: az containerapp env list --resource-group study_resource_group --output table
+# If not, create: run 2 commands below
+# az provider register -n Microsoft.OperationalInsights --wait
+# az containerapp env create --name my-app-env --resource-group study_resource_group --location southeastasia
+
 name: Deploy Flask API
 
 on:
@@ -10,7 +16,13 @@ env:
   IMAGE_NAME: flask-api
   CONTAINER_APP_NAME: flask-api-app
   RESOURCE_GROUP: study_resource_group
-  CONTAINERAPP_ENVIRONMENT: my-app-env  # Phải được tạo trước
+  CONTAINERAPP_ENVIRONMENT: my-app-env  # Phải được tạo trước 
+  # az containerapp env create \
+  # --name my-app-env \
+  # --resource-group study_resource_group \
+  # --location southeastasia
+
+  
 
 jobs:
   deploy:
@@ -24,6 +36,15 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Assign AcrPush role to Service Principal
+      run: |
+        SP_ID=$(az ad signed-in-user show --query id -o tsv || echo ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }})
+        ACR_ID=$(az acr show --name ${{ env.AZURE_CONTAINER_REGISTRY }} --query id -o tsv)
+        az role assignment create \
+          --assignee $SP_ID \
+          --role AcrPush \
+          --scope $ACR_ID || echo "AcrPush role may already be assigned."
 
     - name: Login to ACR
       run: az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
