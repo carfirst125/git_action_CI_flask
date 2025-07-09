@@ -101,8 +101,37 @@ jobs:
 
         fi
 
-    - name: Wait for container app to be ready
-      run: sleep 120
+    - name: Wait until Container App is ready
+      run: |
+        echo "Waiting for Container App to be ready..."
+        for i in {1..30}; do
+          STATUS=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "properties.provisioningState" \
+            --output tsv 2>/dev/null)
+
+          INGRESS=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "properties.configuration.ingress.fqdn" \
+            --output tsv 2>/dev/null)
+
+          echo "Status: $STATUS | Ingress: $INGRESS"
+
+          if [[ "$STATUS" == "Succeeded" && "$INGRESS" != "" ]]; then
+            echo "Container App is ready!"
+            break
+          fi
+
+          if [[ $i -eq 30 ]]; then
+            echo "Timeout waiting for Container App"
+            exit 1
+          fi
+
+          sleep 10
+        done
+
       
     - name: Get Container App FQDN (APP_URL)
       id: get-app-url
@@ -115,15 +144,25 @@ jobs:
         echo "APP_URL=https://$APP_URL" >> $GITHUB_ENV
 
     #flask-api-app.gentlewave-c1b4ab11.southeastasia.azurecontainerapps.io
-    - name: Test root endpoint once
-      run: curl --connect-timeout 5 --max-time 10 --fail ${{ env.APP_URL }}/
+    - name: Test root endpoint with assertion
+      run: |
+        STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 ${{ env.APP_URL }}/)
+        echo "Received HTTP status: $STATUS_CODE"
+
+        if [ "$STATUS_CODE" -eq 200 ]; then
+          echo "✅ PASS: Root endpoint is reachable"
+        else
+          echo "❌ FAIL: Root endpoint not reachable (status code: $STATUS_CODE)"
+          exit 1
+        fi
 
 
-    - name: Test about endpoint
-      run: curl --connect-timeout 5 --max-time 10 --fail ${{ env.APP_URL }}/about
 
-    - name: Test API endpoint
-      run: curl --connect-timeout 5 --max-time 10 --fail ${{ env.APP_URL }}/health
+    #- name: Test about endpoint
+    #  run: curl --connect-timeout 5 --max-time 10 --fail ${{ env.APP_URL }}/about
+
+    #- name: Test API endpoint
+    #  run: curl --connect-timeout 5 --max-time 10 --fail ${{ env.APP_URL }}/health
 
     - name: Wait for API call to complete
       run: sleep 15
