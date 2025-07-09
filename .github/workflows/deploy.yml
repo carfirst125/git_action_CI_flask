@@ -37,3 +37,34 @@ jobs:
           --name ${{ env.CONTAINER_APP_NAME }} \
           --resource-group ${{ env.RESOURCE_GROUP }} \
           --image ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+    - name: Wait for container app to be ready
+      run: sleep 15  # hoặc dùng loop ping nếu cần chắc chắn
+
+    - name: Test root endpoint
+      run: curl -f https://${{ env.CONTAINER_APP_NAME }}.azurecontainerapps.io/
+
+    - name: Test about endpoint
+      run: curl -f https://${{ env.CONTAINER_APP_NAME }}.azurecontainerapps.io/about
+  
+    - name: Test API endpoint
+      run: |
+        curl -f https://${{ env.CONTAINER_APP_NAME }}.azurecontainerapps.io/health
+
+    - name: Wait for api call completed
+      run: sleep 15  # hoặc dùng loop ping nếu cần chắc chắn
+      
+    - name: Clean up container app sau khi test
+      run: |
+        az containerapp delete \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --yes
+          
+    - name: Delete old images (optional)
+      run: |
+        az acr repository delete \
+          --name ${{ env.AZURE_CONTAINER_REGISTRY }} \
+          --repository ${{ env.IMAGE_NAME }} \
+          --yes
+
