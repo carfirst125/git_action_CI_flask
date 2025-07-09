@@ -158,15 +158,24 @@ jobs:
 
     - name: Test about endpoint
       run: |
-        STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 ${{ env.APP_URL }}/about)
-        echo "HTTP Status for /about: $STATUS_CODE"
+        echo "Calling /about endpoint..."
+        RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" --connect-timeout 5 --max-time 10 ${{ env.APP_URL }}/about)
 
-        if [ "$STATUS_CODE" -eq 200 ]; then
-          echo "✅ PASS: /about endpoint OK"
-        else
-          echo "❌ FAIL: /about endpoint returned $STATUS_CODE"
+        # Tách phần body và status code
+        BODY=$(echo "$RESPONSE" | sed -e '/HTTP_STATUS:/d')
+        STATUS=$(echo "$RESPONSE" | grep HTTP_STATUS | cut -d':' -f2)
+
+        echo "HTTP Status: $STATUS"
+        echo "Response body:"
+        echo "$BODY"
+
+        if [ "$STATUS" -ne 200 ]; then
+          echo "❌ FAIL: Status code $STATUS != 200"
           exit 1
+        else
+          echo "✅ PASS"
         fi
+
 
 
     #- name: Test about endpoint
