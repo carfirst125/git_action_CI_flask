@@ -95,12 +95,9 @@ jobs:
         else
             echo "Updating Container App..."
             az containerapp update \
-              --name ${{ env.CONTAINER_APP_NAME }} \
-              --resource-group ${{ env.RESOURCE_GROUP }} \
-              --image ${{ env.AZURE_CONTAINER_REGISTRY_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-              --registry-server ${{ env.AZURE_CONTAINER_REGISTRY_URL }} \
-              --registry-username $USERNAME \
-              --registry-password $PASSWORD
+                    --name ${{ env.CONTAINER_APP_NAME }} \
+                    --resource-group ${{ env.RESOURCE_GROUP }} \
+                    --image ${{ env.AZURE_CONTAINER_REGISTRY_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
         fi
 
