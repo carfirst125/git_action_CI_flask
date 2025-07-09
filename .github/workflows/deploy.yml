@@ -102,7 +102,7 @@ jobs:
         fi
 
     - name: Wait for container app to be ready
-      run: sleep 60
+      run: sleep 120
       
     - name: Get Container App FQDN (APP_URL)
       id: get-app-url
@@ -115,14 +115,15 @@ jobs:
         echo "APP_URL=https://$APP_URL" >> $GITHUB_ENV
 
     #flask-api-app.gentlewave-c1b4ab11.southeastasia.azurecontainerapps.io
-    - name: Test root endpoint
-      run: curl -f ${{ env.APP_URL }}/
+    - name: Test root endpoint once
+      run: curl --connect-timeout 5 --max-time 10 --fail ${{ env.APP_URL }}/
+
 
     - name: Test about endpoint
-      run: curl -f ${{ env.APP_URL }}/about
+      run: curl --connect-timeout 5 --max-time 10 --fail ${{ env.APP_URL }}/about
 
     - name: Test API endpoint
-      run: curl -f ${{ env.APP_URL }}/health
+      run: curl --connect-timeout 5 --max-time 10 --fail ${{ env.APP_URL }}/health
 
     - name: Wait for API call to complete
       run: sleep 15
