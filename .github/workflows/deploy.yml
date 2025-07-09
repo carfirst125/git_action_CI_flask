@@ -144,18 +144,29 @@ jobs:
         echo "APP_URL=https://$APP_URL" >> $GITHUB_ENV
 
     #flask-api-app.gentlewave-c1b4ab11.southeastasia.azurecontainerapps.io
-    - name: Test root endpoint with assertion
+    # - name: Test root endpoint with assertion
+      # run: |
+        # STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 ${{ env.APP_URL }}/)
+        # echo "Received HTTP status: $STATUS_CODE"
+
+        # if [ "$STATUS_CODE" -eq 200 ]; then
+          # echo "✅ PASS: Root endpoint is reachable"
+        # else
+          # echo "❌ FAIL: Root endpoint not reachable (status code: $STATUS_CODE)"
+          # exit 1
+        # fi
+
+    - name: Test about endpoint
       run: |
-        STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 ${{ env.APP_URL }}/)
-        echo "Received HTTP status: $STATUS_CODE"
+        STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 ${{ env.APP_URL }}/about)
+        echo "HTTP Status for /about: $STATUS_CODE"
 
         if [ "$STATUS_CODE" -eq 200 ]; then
-          echo "✅ PASS: Root endpoint is reachable"
+          echo "✅ PASS: /about endpoint OK"
         else
-          echo "❌ FAIL: Root endpoint not reachable (status code: $STATUS_CODE)"
+          echo "❌ FAIL: /about endpoint returned $STATUS_CODE"
           exit 1
         fi
-
 
 
     #- name: Test about endpoint
@@ -164,8 +175,8 @@ jobs:
     #- name: Test API endpoint
     #  run: curl --connect-timeout 5 --max-time 10 --fail ${{ env.APP_URL }}/health
 
-    - name: Wait for API call to complete
-      run: sleep 15
+    #- name: Wait for API call to complete
+    #  run: sleep 15
 
     - name: Clean up Container App
       run: |
