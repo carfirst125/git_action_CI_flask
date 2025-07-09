@@ -46,6 +46,15 @@ jobs:
           --role AcrPush \
           --scope $ACR_ID || echo "AcrPush role may already be assigned."
 
+
+    - name: Get ACR credentials
+      id: acr-creds
+      run: |
+        USERNAME=$(az acr credential show --name ${{ env.AZURE_CONTAINER_REGISTRY }} --query username -o tsv)
+        PASSWORD=$(az acr credential show --name ${{ env.AZURE_CONTAINER_REGISTRY }} --query "passwords[0].value" -o tsv)
+        echo "USERNAME=$USERNAME" >> $GITHUB_ENV
+        echo "PASSWORD=$PASSWORD" >> $GITHUB_ENV
+
     - name: Login to ACR
       run: az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
 
@@ -63,21 +72,27 @@ jobs:
           --output tsv 2>/dev/null || echo "")
 
         if [ -z "$EXISTS" ]; then
-          echo "Creating Container App..."
-          az containerapp create \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.AZURE_CONTAINER_REGISTRY_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            --environment ${{ env.CONTAINERAPP_ENVIRONMENT }} \
-            --ingress external \
-            --target-port 80 \
-            --registry-server ${{ env.AZURE_CONTAINER_REGISTRY_URL }}
+            echo "Creating Container App..."
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.AZURE_CONTAINER_REGISTRY_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --environment ${{ env.CONTAINERAPP_ENVIRONMENT }} \
+              --ingress external \
+              --target-port 80 \
+              --registry-server ${{ env.AZURE_CONTAINER_REGISTRY_URL }} \
+              --registry-username $USERNAME \
+              --registry-password $PASSWORD
         else
-          echo "Updating Container App..."
-          az containerapp update \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.AZURE_CONTAINER_REGISTRY_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            echo "Updating Container App..."
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.AZURE_CONTAINER_REGISTRY_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+              --registry-server ${{ env.AZURE_CONTAINER_REGISTRY_URL }} \
+              --registry-username $USERNAME \
+              --registry-password $PASSWORD
+
         fi
 
     - name: Wait for container app to be ready
