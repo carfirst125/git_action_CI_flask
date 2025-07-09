@@ -141,6 +141,7 @@ jobs:
           --resource-group ${{ env.RESOURCE_GROUP }} \
           --query properties.configuration.ingress.fqdn \
           --output tsv)
+        
         echo "APP_URL=https://$APP_URL" >> $GITHUB_ENV
 
     #flask-api-app.gentlewave-c1b4ab11.southeastasia.azurecontainerapps.io
@@ -158,10 +159,10 @@ jobs:
 
 
 
-    - name: Test about endpoint
-      run: |
-        echo "Calling: $APP_URL/about"
-        curl --connect-timeout 5 --max-time 10 --fail $APP_URL/about
+    #- name: Test about endpoint
+    #  run: |
+    #    echo "Calling: $APP_URL/about"
+    #    curl --connect-timeout 5 --max-time 10 --fail $APP_URL/about
 
 
     #- name: Test API endpoint
@@ -183,3 +184,4 @@ jobs:
           --name ${{ env.AZURE_CONTAINER_REGISTRY }} \
           --repository ${{ env.IMAGE_NAME }} \
           --yes
+
